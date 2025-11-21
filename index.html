@@ -1,89 +1,32 @@
-const express = require('express');
-const cors = require('cors');
-const bcrypt = require('bcryptjs');
-
-const app = express();
-app.use(express.json());
-app.use(cors());
-
-console.log('🚀 Server starting (Local Storage Mode)');
-
-// Local storage - works without internet
-let users = [];
-
-// SIGNUP ENDPOINT
-app.post('/api/signup', async (req, res) => {
+// Update the signup form handler
+document.getElementById('signupForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const userData = {
+    name: document.getElementById('signupName').value,
+    email: document.getElementById('signupEmail').value,
+    phone: document.getElementById('signupPhone').value,
+    address: document.getElementById('signupAddress').value,
+    password: document.getElementById('signupPassword').value
+  };
+  
   try {
-    const { name, email, phone, address, password } = req.body;
-    
-    // Check if user exists
-    if (users.find(u => u.email === email)) {
-      return res.status(400).json({ success: false, message: 'User already exists with this email' });
-    }
-    
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    const user = {
-      name,
-      email,
-      phone,
-      address,
-      password: hashedPassword,
-      userType: 'member'
-    };
-    
-    users.push(user);
-    console.log('✅ User created:', email);
-    
-    res.json({ success: true, message: 'Account created successfully!' });
-  } catch (error) {
-    console.log('Signup error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
-
-// LOGIN ENDPOINT
-app.post('/api/login', async (req, res) => {
-  try {
-    const { email, password, userType } = req.body;
-    
-    const user = users.find(u => u.email === email && u.userType === (userType || 'member'));
-    if (!user) {
-      return res.status(400).json({ success: false, message: 'User not found' });
-    }
-    
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res.status(400).json({ success: false, message: 'Invalid password' });
-    }
-    
-    res.json({ 
-      success: true, 
-      message: 'Login successful', 
-      user: { 
-        name: user.name, 
-        email: user.email, 
-        userType: user.userType 
-      } 
+    const response = await fetch('http://localhost:3000/api/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData)
     });
+    
+    const result = await response.json();
+    
+    if (result.success) {
+      alert('Account created successfully!');
+      document.getElementById('signupModal').style.display = 'none';
+      document.getElementById('signupForm').reset();
+    } else {
+      alert('Error: ' + result.message);
+    }
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    alert('Network error. Please make sure the backend server is running on localhost:3000');
   }
-});
-
-// Test endpoint
-app.get('/api/test', (req, res) => {
-  res.json({ success: true, message: 'Backend working! Users: ' + users.length });
-});
-
-// Get all users (for admin)
-app.get('/api/users', (req, res) => {
-  res.json({ success: true, users: users.map(u => ({ name: u.name, email: u.email, userType: u.userType })) });
-});
-
-const PORT = 3000;
-app.listen(PORT, () => {
-  console.log('✅ Server running on http://localhost:3000');
-  console.log('📝 Test: http://localhost:3000/api/test');
-  console.log('💾 Using local storage (no MongoDB required)');
 });
