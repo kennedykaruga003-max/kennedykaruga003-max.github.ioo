@@ -1,32 +1,96 @@
-// Update the signup form handler
-document.getElementById('signupForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
+// Wait for DOM to be fully loaded before attaching event listeners
+document.addEventListener('DOMContentLoaded', () => {
+  const signupForm = document.getElementById('signupForm');
   
-  const userData = {
-    name: document.getElementById('signupName').value,
-    email: document.getElementById('signupEmail').value,
-    phone: document.getElementById('signupPhone').value,
-    address: document.getElementById('signupAddress').value,
-    password: document.getElementById('signupPassword').value
-  };
-  
-  try {
-    const response = await fetch('http://localhost:3000/api/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData)
-    });
-    
-    const result = await response.json();
-    
-    if (result.success) {
-      alert('Account created successfully!');
-      document.getElementById('signupModal').style.display = 'none';
-      document.getElementById('signupForm').reset();
-    } else {
-      alert('Error: ' + result.message);
-    }
-  } catch (error) {
-    alert('Network error. Please make sure the backend server is running on localhost:3000');
+  // Check if form exists before adding listener
+  if (!signupForm) {
+    console.error('Signup form not found');
+    return;
   }
+  
+  signupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    // Get form elements
+    const nameInput = document.getElementById('signupName');
+    const emailInput = document.getElementById('signupEmail');
+    const phoneInput = document.getElementById('signupPhone');
+    const addressInput = document.getElementById('signupAddress');
+    const passwordInput = document.getElementById('signupPassword');
+    
+    // Validate all inputs exist
+    if (!nameInput || !emailInput || !phoneInput || !addressInput || !passwordInput) {
+      alert('Form fields are missing');
+      return;
+    }
+    
+    // Get values
+    const userData = {
+      name: nameInput.value.trim(),
+      email: emailInput.value.trim(),
+      phone: phoneInput.value.trim(),
+      address: addressInput.value.trim(),
+      password: passwordInput.value
+    };
+    
+    // Client-side validation
+    if (!userData.name || !userData.email || !userData.phone || !userData.address || !userData.password) {
+      alert('Please fill in all fields');
+      return;
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userData.email)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+    
+    // Password validation (minimum 6 characters)
+    if (userData.password.length < 6) {
+      alert('Password must be at least 6 characters long');
+      return;
+    }
+    
+    // Disable submit button to prevent double submission
+    const submitButton = signupForm.querySelector('button[type="submit"]');
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = 'Creating Account...';
+    }
+    
+    try {
+      const response = await fetch('http://localhost:3000/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        alert('Account created successfully!');
+        
+        // Close modal if it exists
+        const signupModal = document.getElementById('signupModal');
+        if (signupModal) {
+          signupModal.style.display = 'none';
+        }
+        
+        // Reset form
+        signupForm.reset();
+      } else {
+        alert('Error: ' + result.message);
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      alert('Network error. Please make sure the backend server is running on localhost:3000');
+    } finally {
+      // Re-enable submit button
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Sign Up';
+      }
+    }
+  });
 });
